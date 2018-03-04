@@ -23,6 +23,8 @@ class Course implements Serializable {
     ArrayList <CourseAttribute> courseAttributes;
     String fee;
 
+    String bulletinDescription;
+
 }
 
 class ClassDay implements Serializable {

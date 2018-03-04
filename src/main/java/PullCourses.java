@@ -21,18 +21,13 @@ public class PullCourses {
     private static ArrayList<String> htmlPages = new ArrayList<>();
     private static ArrayList <Course> totalCourseData = new ArrayList<>();
     private static String lastRevisedTime;
+    private static WebDriver driver;
 
     public static void main (String[] argv) {
 
-
         initFirestore();
-
-        // this reruns the web scrape and parse if there is fresh data to pull
-//        runSelenium();
-
-        // this just loads the current courses into the java program, no need to scrape new data
-        loadDataFromFile();
-
+        runSelenium();
+//        loadDataFromFile();
         uploadData();
         cleanUp();
 
@@ -50,7 +45,6 @@ public class PullCourses {
         int startSubjectNumber = 1000;
         int endSubjectNumber = 1099;
 
-        WebDriver driver;
         System.setProperty("webdriver.chrome.driver", "chromedriver");
         ChromeOptions chromeOptions = new ChromeOptions();
         chromeOptions.addArguments("--headless");
@@ -94,8 +88,8 @@ public class PullCourses {
         System.out.println("SQL Runtime (millis): " + (System.currentTimeMillis() - startClock));
         System.out.println("SQL Runtime (sec): " + (System.currentTimeMillis() - startClock)/1000);
         System.out.println("SQL Runtime (min): " + (System.currentTimeMillis() - startClock)/1000/60);
-        driver.close();
         parseData();
+        driver.close();
     }
 
     private static void parseData() {
@@ -190,6 +184,12 @@ public class PullCourses {
                 openIndex = htmlPages.get(i).indexOf("http", openIndex);
                 closeIndex = htmlPages.get(i).indexOf("target", openIndex) - 2;
                 course.bulletinLink = htmlPages.get(i).substring(openIndex, closeIndex);
+
+                driver.get(course.bulletinLink);
+                String bulletinHTML = driver.getPageSource();
+
+                course.bulletinDescription = driver.findElement(By.xpath("//*[@id=\"fssearchresults\"]/div/div/p")).getText();
+
 
                 openIndex = htmlPages.get(i).indexOf("\t\t\t\t\t", openIndex) + 5;
                 closeIndex = htmlPages.get(i).indexOf("\n", openIndex);
@@ -580,6 +580,8 @@ public class PullCourses {
             courseData.put("subjectNumberInteger",  subjNumberInteger);
             courseData.put("courseName", totalCourseData.get(i).courseName);
             courseData.put("credit", totalCourseData.get(i).credit);
+            courseData.put("bulletinLink", totalCourseData.get(i).bulletinLink);
+            courseData.put("bulletinDescription", totalCourseData.get(i).bulletinDescription);
             ArrayList<String> offeringsArray = new ArrayList<>();
             for (int j = 0; j < totalCourseData.size(); ++j) {
                 boolean isEqual = totalCourseData.get(i).subjectAcronym.equals(totalCourseData.get(j).subjectAcronym)
@@ -596,6 +598,7 @@ public class PullCourses {
                     offeringData.put("status",totalCourseData.get(j).status);
 
                     offeringData.put("bulletinLink", totalCourseData.get(j).bulletinLink);
+                    offeringData.put("bulletinDescription", totalCourseData.get(j).bulletinDescription);
                     offeringData.put("sectionNumber", totalCourseData.get(j).sectionNumber);
                     if (totalCourseData.get(j).instructor != null) {
                         offeringData.put("instructors", totalCourseData.get(j).instructor);
